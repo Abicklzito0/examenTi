@@ -1,0 +1,59 @@
+﻿@page "/CuentaView"
+@using System.Net.Http;
+@using System.Net.Http.Json;
+@using Microsoft.AspNetCore.Authorization
+@inject HttpClient http
+@attribute [Authorize(Roles = "Admin")]
+
+<h3>CuentaView</h3>
+
+<div class="row">
+    <div class="col-12 text-right">
+        <a href="/CuentaAgregar">Agregar Nueva Cuenta</a>
+    </div>
+</div>
+<table class="table">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Cuenta</th>
+            <th>Cliente</th>
+            <th>Estatus</th>
+            <th>SaldoInicial</th>
+            <th>SaldoActual</th>
+        </tr>
+    </thead>
+    <tbody>
+        @if (respuesta != null && respuesta.Data != null)
+        {
+            @foreach (var item in (List<ModeloDatos.Cuenta>)respuesta.Data)
+            {
+        <tr>
+            <td>@item.ID</td>
+            <td>@item.Descripcion</td>
+            <td>@item.AuxiliarDescripcion</td>
+            <td>@item.Estado</td>
+            <td>@item.SaldoInicial</td>
+            <td>@item.SaldoActual</td>
+            <td>
+                <a href="/CuentaAgregar/@item.ID">Editar</a>
+                <a href="/CuentaEliminar/@item.ID">Eliminar</a>
+            </td>
+
+        </tr>
+
+            }
+        }
+    </tbody>
+</table>
+
+@code {
+    public string url = "/api/Cuenta";
+    Data.Respuesta<List<ModeloDatos.Cuenta>> respuesta = new Data.Respuesta<List<ModeloDatos.Cuenta>>();
+    protected override async Task OnInitializedAsync() =>
+        respuesta = await http.GetFromJsonAsync<Data.Respuesta<List<ModeloDatos.Cuenta>>>(url);
+
+
+
+
+}

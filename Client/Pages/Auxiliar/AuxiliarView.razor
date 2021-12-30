@@ -1,0 +1,57 @@
+﻿@page "/ProspectoView"
+@using System.Net.Http;
+@using System.Net.Http.Json;
+@using Microsoft.AspNetCore.Authorization
+@inject HttpClient http
+@attribute [Authorize(Roles = "Admin")]
+
+
+
+
+<h3>Prospectos</h3>
+
+<div class="row">
+    <div class="col-12 text-right">
+        <a href="/ProspectoViewAdd">Agregar Nuevo Prospecto</a>
+    </div>
+</div>
+<table class="table">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Nombe</th>
+            <th>Estatus</th>
+            <th>Comandos</th>
+        </tr>
+    </thead><tbody>
+    @if (respuesta != null && respuesta.Data != null)
+    {
+        @foreach (var item in (List<ModeloDatos.Auxiliar>)respuesta.Data)
+        {
+            <tr>
+                <td>@item.ID</td>
+                <td>@item.NombreCompleto</td>
+                <td>@item.Estado</td>
+                <td>
+                    <a href="/ProspectoViewAdd/@item.ID">Editar</a>
+                    <a href="/AuxiliarViewEliminar/@item.ID">Eliminar</a>
+                </td>
+
+            </tr>
+
+        }
+    }
+    </tbody>
+</table>
+
+@code {
+    public string url = "/api/Auxiliar";
+    Data.Respuesta<List<ModeloDatos.Auxiliar>> respuesta = new Data.Respuesta<List<ModeloDatos.Auxiliar>>();
+    protected override async Task OnInitializedAsync() =>
+        respuesta = await http.GetFromJsonAsync<Data.Respuesta<List<ModeloDatos.Auxiliar>>>(url);
+
+
+
+
+}
+

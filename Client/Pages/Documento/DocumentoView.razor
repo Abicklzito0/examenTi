@@ -1,0 +1,61 @@
+﻿@page "/DocumentoView"
+@using System.Net.Http;
+@using System.Net.Http.Json;
+@using Microsoft.AspNetCore.Authorization
+@inject HttpClient http
+@attribute [Authorize(Roles = "Admin")]
+
+
+
+
+<h3>Documentos</h3>
+
+<div class="row">
+    <div class="col-12 text-right">
+        <a href="/DocumentoAgregar">Agregar Nuevo Documento</a>
+    </div>
+</div>
+<table class="table">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Cliente</th>
+            <th>Estatus</th>
+            <th>TipoDocumento</th>
+            <th>Importe</th>
+        </tr>
+    </thead>
+    <tbody>
+        @if (respuesta != null && respuesta.Data != null)
+        {
+            @foreach (var item in (List<ModeloDatos.Documento>)respuesta.Data)
+            {
+        <tr>
+            <td>@item.ID</td>
+            <td>@item.Auxiliar</td>
+            <td>@item.Estado</td>
+            <td>@item.TipoDocumento</td>
+            <td>@item.Importe</td>
+            <td>
+                <a href="/DocumentoAgregar/@item.ID">Editar</a>
+                <a href="/DocumentoEliminar/@item.ID">Eliminar</a>
+            </td>
+
+        </tr>
+
+            }
+        }
+    </tbody>
+</table>
+
+@code {
+    public string url = "/api/Documento";
+    Data.Respuesta<List<ModeloDatos.Documento>> respuesta = new Data.Respuesta<List<ModeloDatos.Documento>>();
+    protected override async Task OnInitializedAsync() =>
+        respuesta = await http.GetFromJsonAsync<Data.Respuesta<List<ModeloDatos.Documento>>>(url);
+
+
+
+
+}
+

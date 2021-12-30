@@ -1,0 +1,286 @@
+﻿@page "/DocumentoAgregar"
+@page "/DocumentoAgregar/{id:int}"
+@using Microsoft.AspNetCore.Authorization
+@using System.Net.Http;
+@using System.Net.Http.Json;
+@using System.Linq
+@using System.Threading
+@using System.IO;
+@using System.Net.Http.Headers
+@using System.Text.Json
+@using Microsoft.Extensions.Logging;
+@using BlazorInputFile;
+@using Microsoft.AspNetCore.Components.Forms;
+@using Microsoft.AspNetCore.Components;
+@inject IJSRuntime JSRuntime
+
+@inject HttpClient http
+@inject NavigationManager navegar
+@implements IDisposable
+@attribute [Authorize(Roles = "Admin")]
+<h3>Agregar nuevo </h3>
+<EditForm Model="@documento" OnValidSubmit="@HandleValidSubmit" OnInvalidSubmit="HandleInvalidSubmit">
+    <DataAnnotationsValidator />
+    <div class="container-fluid">
+        <div class="form-group row mb-1">
+            <label class="col-sm-3">Tipo Documento : </label>
+            <div class="col-sm-9">
+                @if (ListaTipoDocumento != null)
+                {
+
+                    <select id="SearchStateClasificacion" value="@documento.IDTipoDocumento" @onchange="DocumentoChange" class="form-control">
+
+                        @foreach (var estados in ListaTipoDocumento)
+                        {
+                            <option value="@estados.ID">@estados.Descripcion</option>
+                        }
+                    </select>
+                }
+            </div>
+
+        </div>
+        <div class="form-group row mb-1">
+            <label class="col-sm-3">Cliente : </label>
+            <div class="col-sm-9">
+                @if (ListaAuxiliar != null)
+                {
+
+                    <select id="SearchStateClasificacionasasas" value="@documento.IDAuxiliar" @onchange="TipoClienteChange" class="form-control">
+
+                        @foreach (var auxiliar in ListaAuxiliar)
+                        {
+                            <option value="@auxiliar.ID">@auxiliar.NombreCompleto</option>
+                        }
+                    </select>
+                }
+            </div>
+
+        </div>
+        <div class="form-group row mb-1">
+            <label class="col-sm-3">Cuenta : </label>
+            <div class="col-sm-9">
+                @if (ListaCuenta != null)
+                {
+
+                    <select id="SearchStateClasificacionasasas" value="@documento.IDCuenta" @onchange="CuentaChange" class="form-control">
+
+                        @foreach (var cuenta in ListaCuenta)
+                        {
+                            <option value="@cuenta.ID">@cuenta.Descripcion</option>
+                        }
+                    </select>
+                }
+            </div>
+
+        </div>
+        <div class="form-group row mb-1">
+            <label class="col-sm-3">*Fecha : </label>
+            <div class="col-sm-9">
+                <InputDate class="form-control" @bind-Value="@documento.FechaRegistro"></InputDate>
+                <ValidationMessage For="@(()=>documento.FechaRegistro)"></ValidationMessage>
+            </div>
+
+        </div>
+        <div class="form-group row mb-1">
+            <label class="col-sm-3">*Importe : </label>
+            <div class="col-sm-9">
+                <InputNumber class="form-control" @bind-Value="@documento.Importe"></InputNumber>
+            </div>
+
+        </div>
+        <div class="form-group row mb-1">
+            <label class="col-sm-3">Concepto : </label>
+            <div class="col-sm-9">
+                <InputText class="form-control" @bind-Value="@documento.Descripcion"></InputText>
+            </div>
+
+        </div>
+
+        <div class="form-group row mb-1">
+            <div class=" col-sm-12">
+                <button class="btn btn-primary" type="submit">Guardar</button>
+                <button type="button" class="btn btn-danger" @onclick="@Salir">Salir</button>
+
+            </div>
+        </div>
+
+        @if (displayValidationErrorMessages)
+        {
+            <div class="col-md-4" style="margin-top:10px">
+                <label>Validation Messages: </label>
+                <ValidationSummary />
+            </div>
+        }
+    </div>
+</EditForm>
+@if (displayUserAddedToDB)
+{
+    <div class="row bg-success text-white" style="margin-top:10px; height:40px">
+        <label class="p-2">Guardando en la base de datos... </label>
+    </div>
+}
+
+@code {
+    public string url = "/api/Documento";
+    public string urlCuenta = "/api/cuenta";
+    public string urlTipo = "/api/TipoDocumento";
+    public string urlAuxiliar = "/api/Auxiliar";
+    [Parameter] public string InitialText { get; set; } = "Selecciona Tipo";
+    [Parameter] public int id { get; set; }
+    private ModeloDatos.Documento documento = new ModeloDatos.Documento();
+    Data.Respuesta<ModeloDatos.Documento> respuesta = new Data.Respuesta<ModeloDatos.Documento>();
+    bool displayValidationErrorMessages = false;
+    bool displayUserAddedToDB = false;
+
+    List<TipoDocumento> ListaTipoDocumento = new List<TipoDocumento>();
+    Data.Respuesta<List<TipoDocumento>> respuestaTipoDocumento = new Data.Respuesta<List<TipoDocumento>>();
+
+    List<Auxiliar> ListaAuxiliar = new List<Auxiliar>();
+    Data.Respuesta<List<Auxiliar>> respuestaAuxiliar = new Data.Respuesta<List<Auxiliar>>();
+
+    List<Cuenta> ListaCuenta = new List<Cuenta>();
+    Data.Respuesta<List<Cuenta>> respuestaCuenta = new Data.Respuesta<List<Cuenta>>();
+
+    async Task DescargarArchivo(string index)
+    {
+
+
+    }
+    public void TrClickedAtIndex(string index)
+    {
+
+    }
+    async Task Salir()
+    {
+
+        bool confirmed = await JSRuntime.InvokeAsync<bool>("confirm", "Desea Salir?");
+        if (confirmed)
+        {
+            Console.WriteLine("Entro a la condicion salir");
+            navegar.NavigateTo("/DocumentoView");
+        }
+        else
+        {
+            Console.WriteLine("no entro a la condicion");
+
+        }
+    }
+
+
+    private async Task Guardar()
+    {
+
+
+        documento.IDMoneda = 1;
+        documento.Paridad = 1;
+
+        Console.WriteLine("Entro al guardar");
+        if (id != 0)
+        {
+
+            var orespuesta = await http.PutAsJsonAsync<ModeloDatos.Documento>(url, documento);
+            respuesta = orespuesta.Content.ReadFromJsonAsync<Data.Respuesta<ModeloDatos.Documento>>().Result;
+        }
+        else
+        {
+            documento.Estado = "Activo";
+            var orespuesta = await http.PostAsJsonAsync<ModeloDatos.Documento>(url, documento);
+            Console.WriteLine("Entro guardar despues");
+            respuesta = orespuesta.Content.ReadFromJsonAsync<Data.Respuesta<ModeloDatos.Documento>>().Result;
+
+        }
+
+        navegar.NavigateTo("/DocumentoView");
+
+    }
+
+    private void HandleValidSubmit(EditContext context)
+    {
+        displayValidationErrorMessages = false;
+        displayUserAddedToDB = true;
+        Guardar();
+    }
+    private void HandleInvalidSubmit(EditContext context)
+    {
+        displayValidationErrorMessages = true;
+        displayUserAddedToDB = false;
+    }
+    void LocationChanged(object sender, LocationChangedEventArgs e)
+    {
+        string navigationMethod = e.IsNavigationIntercepted ? "HTML" : "code";
+        System.Diagnostics.Debug.WriteLine($"Notified of navigation via {navigationMethod} to {e.Location}");
+    }
+    void IDisposable.Dispose()
+    {
+        System.Diagnostics.Debug.WriteLine("Entra a dispose");
+        // Unsubscribe from the event when our component is disposed
+        navegar.LocationChanged -= LocationChanged; StateHasChanged();
+    }
+
+    protected override async Task OnInitializedAsync()
+
+    {
+
+
+        // Subscribe to the event
+        navegar.LocationChanged += LocationChanged;
+
+        documento = new Documento();
+
+        respuestaTipoDocumento = await http.GetFromJsonAsync<Data.Respuesta<List<TipoDocumento>>>(urlTipo);
+        ListaTipoDocumento = respuestaTipoDocumento.Data;
+        documento.IDTipoDocumento = 1;
+        documento.FechaRegistro = DateTime.Now;
+
+        respuestaAuxiliar = await http.GetFromJsonAsync<Data.Respuesta<List<Auxiliar>>>(urlAuxiliar);
+        ListaAuxiliar = respuestaAuxiliar.Data;
+        documento.IDAuxiliar = ListaAuxiliar.FirstOrDefault().ID;
+        if (id != 0)
+        {
+
+            Console.WriteLine("buscando");
+            respuesta = await http.GetFromJsonAsync<Data.Respuesta<ModeloDatos.Documento>>(url + "/" + id);
+            documento = respuesta.Data;
+
+            respuestaCuenta = await http.GetFromJsonAsync<Data.Respuesta<List<Cuenta>>>(urlCuenta + "/" + documento.IDAuxiliar.ToString());
+
+            ListaCuenta = respuestaCuenta.Data;
+            ListaCuenta.FirstOrDefault(C => C.ID == documento.IDCuenta);
+        }
+        Console.WriteLine("salio");
+
+    }
+
+    async Task TipoClienteChange(ChangeEventArgs e)
+    {
+        string selectedString = e.Value.ToString();
+        documento.IDAuxiliar = Convert.ToInt32(e.Value);
+
+        Console.WriteLine("tipocliente: " + selectedString + "-" + e.ToString());
+
+        respuestaCuenta = await http.GetFromJsonAsync<Data.Respuesta<List<Cuenta>>>(urlCuenta + "/" + documento.IDAuxiliar.ToString());
+
+        ListaCuenta = respuestaCuenta.Data;
+        if (ListaCuenta != null)
+            if (ListaCuenta.Count > 0)
+                documento.IDCuenta = ListaCuenta.FirstOrDefault().ID;
+    }
+
+    void DocumentoChange(ChangeEventArgs e)
+    {
+
+        string selectedString = e.Value.ToString();
+        documento.IDTipoDocumento = Convert.ToInt32(e.Value);
+
+        Console.WriteLine("tipodocumento: " + selectedString + "-" + e.ToString());
+    }
+    void CuentaChange(ChangeEventArgs e)
+    {
+        string selectedString = e.Value.ToString();
+        documento.IDCuenta = Convert.ToInt32(e.Value);
+
+        Console.WriteLine("cuenta: " + selectedString + "-" + e.ToString());
+    }
+
+}
+
